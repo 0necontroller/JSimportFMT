@@ -51,6 +51,14 @@ func ValidateGitRepo(target string) (string, error) {
 	return "", ErrNotInGitRepo
 }
 
+func GetMatcher(target string, allowDirs []string) (*gitignore.Matcher, error) {
+	gitRoot, err := ValidateGitRepo(target)
+	if err != nil {
+		return nil, err
+	}
+	return gitignore.NewMatcher(filepath.Join(gitRoot, ".gitignore"), allowDirs)
+}
+
 func Scan(target string, allowDirs []string, fileChan chan<- string, errChan chan<- error) {
 	defer close(fileChan)
 

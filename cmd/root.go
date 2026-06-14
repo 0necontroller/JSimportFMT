@@ -16,6 +16,7 @@ var (
 	checkMode     bool
 	dryRunMode    bool
 	separateTypes bool
+	checkIgnore   bool
 	allowDirs     []string
 )
 
@@ -27,6 +28,34 @@ locates import statements, and reorders them according to configurable rules.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		target := "."
+		if len(args) > 0 {
+			target = args[0]
+		}
+		
+		if checkIgnore {
+			matcher, err := scanner.GetMatcher(target, allowDirs)
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				os.Exit(2)
+			}
+			
+			fmt.Println("Default Ignored Directories:")
+			for _, dir := range matcher.GetDefaultIgnored() {
+				fmt.Printf("  - %s\n", dir)
+			}
+			
+			lines := matcher.GetGitignoreLines()
+			if len(lines) > 0 {
+				fmt.Println("\nRules from .gitignore:")
+				for _, line := range lines {
+					fmt.Printf("  - %s\n", line)
+				}
+			} else {
+				fmt.Println("\nNo rules found in .gitignore (or file not found).")
+			}
+			return nil
+		}
+
 		isInteractive := len(args) == 0 && !writeMode && !checkMode && !dryRunMode
 
 		if isInteractive {
@@ -153,6 +182,7 @@ func Execute() error {
 func init() {
 	rootCmd.Flags().BoolVarP(&writeMode, "write", "w", false, "Rewrite files in place")
 	rootCmd.Flags().BoolVarP(&checkMode, "check", "c", false, "Check if files need formatting without changing them")
+	rootCmd.Flags().BoolVar(&checkIgnore, "check-ignore", false, "List default and .gitignore rules that apply to the target")
 	rootCmd.Flags().BoolVar(&dryRunMode, "dry-run", false, "Display unified diffs without modifying files")
 	rootCmd.Flags().BoolVar(&separateTypes, "separate-types", false, "Sort and separate type imports from regular imports")
 	rootCmd.Flags().StringSliceVar(&allowDirs, "allow", []string{}, "Explicitly allow ignored directories (e.g. dist, build)")

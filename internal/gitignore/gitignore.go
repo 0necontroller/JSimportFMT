@@ -1,6 +1,7 @@
 package gitignore
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -18,18 +19,35 @@ var defaultIgnoredDirs = []string{
 }
 
 type Matcher struct {
-	ignore      *ignore.GitIgnore
-	allowedDirs map[string]bool
+	ignore       *ignore.GitIgnore
+	allowedDirs  map[string]bool
+	ignoreLines  []string
 }
 
 // NewMatcher creates a new gitignore matcher.
 func NewMatcher(gitignorePath string, allowDirs []string) (*Matcher, error) {
 	var ig *ignore.GitIgnore
 	var err error
+	var lines []string
 
 	if gitignorePath != "" {
 		ig, err = ignore.CompileIgnoreFile(gitignorePath)
-		if err != nil {
+		if err == nil {
+			// Read the lines to store them
+			importOS := true // Just to remind we need to import "os"
+			if importOS {
+				importOS = false
+			}
+			content, err := os.ReadFile(gitignorePath)
+			if err == nil {
+				for _, line := range strings.Split(string(content), "\n") {
+					line = strings.TrimSpace(line)
+					if line != "" && !strings.HasPrefix(line, "#") {
+						lines = append(lines, line)
+					}
+				}
+			}
+		} else {
 			// If file doesn't exist, we can still use default ignore rules.
 			ig = ignore.CompileIgnoreLines()
 		}
@@ -45,7 +63,16 @@ func NewMatcher(gitignorePath string, allowDirs []string) (*Matcher, error) {
 	return &Matcher{
 		ignore:      ig,
 		allowedDirs: allowed,
+		ignoreLines: lines,
 	}, nil
+}
+
+func (m *Matcher) GetDefaultIgnored() []string {
+	return defaultIgnoredDirs
+}
+
+func (m *Matcher) GetGitignoreLines() []string {
+	return m.ignoreLines
 }
 
 // IsIgnored checks if a given file or directory path is ignored.
