@@ -1,0 +1,40 @@
+# === Go Build and Binary Outputs ===
+bin/
+out/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# === Go Performance and Test Artifacts ===
+*.out
+*.prof
+coverage.txt
+jsimportfmt
+
+# === Go Dependencies ===
+# Modern Go projects use go.mod and go.sum. Do not commit the vendor folder
+# unless your team explicitly requires offline vendoring via 'go mod vendor'.
+vendor/
+
+# === Environment and Secrets ===
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# === Development Tools & IDEs ===
+# JetBrains (GoLand / IntelliJ)
+.idea/
+*.iml
+
+# Visual Studio Code
+.vscode/
+.history/
+
+# === System Files ===
+.DS_Store
+Thumbs.db
