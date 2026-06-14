@@ -1,4 +1,4 @@
-# jsimportfmt
+# JSimportFMT
 
 A high-performance CLI tool written in Go to automatically format and sort JavaScript and TypeScript imports by length. Optimized for very large repositories and CI/CD pipelines.
 
