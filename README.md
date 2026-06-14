@@ -37,6 +37,11 @@ Format a specific directory:
 jsimportfmt src --write
 ```
 
+Format a specific file:
+```bash
+jsimportfmt src/index.ts --write
+```
+
 Format and separate type imports:
 ```bash
 jsimportfmt src --write --separate-types

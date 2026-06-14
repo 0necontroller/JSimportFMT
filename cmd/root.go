@@ -167,9 +167,6 @@ locates import statements, and reorders them according to configurable rules.`,
 		select {
 		case err := <-errChan:
 			fmt.Printf("✖ error: %v\n", err)
-			if err == scanner.ErrNotInGitRepo {
-				os.Exit(2)
-			}
 			os.Exit(2)
 		default:
 		}

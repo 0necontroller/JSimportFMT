@@ -1,15 +1,12 @@
 package scanner
 
 import (
-	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
 
 	"github.com/0necontroller/jsimportfmt/internal/gitignore"
 )
-
-var ErrNotInGitRepo = errors.New("target is not inside a git repository")
 
 // ValidExtensions lists the supported file extensions.
 var ValidExtensions = map[string]bool{
@@ -23,10 +20,13 @@ var ValidExtensions = map[string]bool{
 	".cts": true,
 }
 
-func ValidateGitRepo(target string) (string, error) {
+// FindProjectRoot searches upwards for a .git directory.
+// It limits the search to a maximum of 2 parent directories.
+// If none is found, it falls back to the target's directory.
+func FindProjectRoot(target string) string {
 	absTarget, err := filepath.Abs(target)
 	if err != nil {
-		return "", err
+		return filepath.Dir(target)
 	}
 
 	dir := absTarget
@@ -34,11 +34,13 @@ func ValidateGitRepo(target string) (string, error) {
 	if err == nil && !info.IsDir() {
 		dir = filepath.Dir(dir)
 	}
+	startDir := dir
 
-	for {
+	// Limit search to 2 levels up
+	for level := 0; level <= 2; level++ {
 		gitPath := filepath.Join(dir, ".git")
 		if info, err := os.Stat(gitPath); err == nil && info.IsDir() {
-			return dir, nil
+			return dir
 		}
 
 		parent := filepath.Dir(dir)
@@ -48,27 +50,20 @@ func ValidateGitRepo(target string) (string, error) {
 		dir = parent
 	}
 
-	return "", ErrNotInGitRepo
+	return startDir
 }
 
 func GetMatcher(target string, allowDirs []string) (*gitignore.Matcher, error) {
-	gitRoot, err := ValidateGitRepo(target)
-	if err != nil {
-		return nil, err
-	}
-	return gitignore.NewMatcher(filepath.Join(gitRoot, ".gitignore"), allowDirs)
+	root := FindProjectRoot(target)
+	return gitignore.NewMatcher(filepath.Join(root, ".gitignore"), allowDirs)
 }
 
 func Scan(target string, allowDirs []string, fileChan chan<- string, errChan chan<- error) {
 	defer close(fileChan)
 
-	gitRoot, err := ValidateGitRepo(target)
-	if err != nil {
-		errChan <- err
-		return
-	}
+	root := FindProjectRoot(target)
 
-	matcher, err := gitignore.NewMatcher(filepath.Join(gitRoot, ".gitignore"), allowDirs)
+	matcher, err := gitignore.NewMatcher(filepath.Join(root, ".gitignore"), allowDirs)
 	if err != nil {
 		errChan <- err
 		return
@@ -92,14 +87,14 @@ func Scan(target string, allowDirs []string, fileChan chan<- string, errChan cha
 			return err
 		}
 
-		relPath, _ := filepath.Rel(gitRoot, path)
+		relPath, _ := filepath.Rel(root, path)
 		if relPath == "" || relPath == "." {
 			relPath = path
 		}
 
 		isDir := d.IsDir()
 
-		if path == gitRoot || path == target {
+		if path == root || path == target {
 			// Don't ignore the root directory being scanned
 		} else if isDir && d.Name() == ".git" {
 			return fs.SkipDir
