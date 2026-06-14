@@ -44,12 +44,53 @@ locates import statements, and reorders them according to configurable rules.`,
 			allowFilePath = filepath.Join(dir, ".jifallow")
 		}
 
+		// Keep track of what we got from CLI vs what is in the file
+		cliAllowDirs := make([]string, len(allowDirs))
+		copy(cliAllowDirs, allowDirs)
+		
+		existingAllowed := make(map[string]bool)
 		content, err := os.ReadFile(allowFilePath)
 		if err == nil {
 			for _, line := range strings.Split(string(content), "\n") {
 				line = strings.TrimSpace(line)
 				if line != "" && !strings.HasPrefix(line, "#") {
-					allowDirs = append(allowDirs, line)
+					existingAllowed[line] = true
+					// If not already in allowDirs (from CLI), add it
+					found := false
+					for _, d := range allowDirs {
+						if d == line {
+							found = true
+							break
+						}
+					}
+					if !found {
+						allowDirs = append(allowDirs, line)
+					}
+				}
+			}
+		}
+
+		// If --allow was used, persist new ones to .jifallow
+		if len(cliAllowDirs) > 0 {
+			var newToAppend []string
+			for _, d := range cliAllowDirs {
+				if !existingAllowed[d] {
+					newToAppend = append(newToAppend, d)
+				}
+			}
+
+			if len(newToAppend) > 0 {
+				f, err := os.OpenFile(allowFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if err == nil {
+					// If file is new/empty, add the header
+					info, _ := f.Stat()
+					if info.Size() == 0 {
+						f.WriteString("# Directories listed here will be overridden (allowed) bypassing default ignores and .gitignore\n")
+					}
+					for _, d := range newToAppend {
+						f.WriteString(d + "\n")
+					}
+					f.Close()
 				}
 			}
 		}

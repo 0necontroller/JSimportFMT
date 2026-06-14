@@ -96,10 +96,16 @@ jsimportfmt . --check-ignore
 ```
 
 ### Whitelist Directories
-Allow formatting in ignored directories using a `.jifallow` file or the `--allow` flag:
+Allow formatting in ignored directories using a `.jifallow` file or the `--allow` flag.
+
+**Automatic Persistence:**
+Using the `--allow` flag (e.g., `--allow dist`) will automatically append the directory to your `.jifallow` file if it's not already listed. If the file doesn't exist, it will be created with a helpful header comment.
+
 ```bash
 jsimportfmt . --allow dist --allow build
 ```
+
+The `.jifallow` file supports `#` comments and one directory per line. Any directory listed there (or passed via `--allow`) will bypass both default ignores and `.gitignore` rules.
 
 ### Check Mode (CI)
 Verify formatting without making changes:
