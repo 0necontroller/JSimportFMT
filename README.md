@@ -2,6 +2,42 @@
 
 A high-performance CLI tool written in Go to automatically format and sort JavaScript and TypeScript imports by length. Optimized for very large repositories and CI/CD pipelines.
 
+### Command
+
+```bash
+➜  express-api git:(main) jsimportfmt ./router/apps.ts  --dry-run
+```
+### Output
+The output is all my imports are now formatted  from shortest to longest.    
+Yes, Its a very niche tool and I just like my imports looking neet
+
+```diff
+--- ./router/apps.ts (original)
++++ ./router/apps.ts (formatted)
+@@ -1,13 +1,13 @@
+ import { Router } from "express";
+-import { getTaxonomy } from "#/controllers/apps/taxonomy.Controller";
+-import * as RfsController from "#/controllers/apps/rfs.Controller";
+-import * as AppsController from "#/controllers/apps/apps.Controller";
+-import * as ContributeController from "#/controllers/apps/contribute.Controller";
+-import * as SubmitController from "#/controllers/apps/submit.Controller";
+-import { authenticate } from "#/middleware/auth.middleware";
+ import { UserRole } from "#/models/user.model";
++import { authenticate } from "#/middleware/auth.middleware";
+ import { validate } from "#/middleware/validation.middleware";
+ import * as ValidationSchema from "#/validation/apps.validation";
++import * as RfsController from "#/controllers/apps/rfs.Controller";
++import * as AppsController from "#/controllers/apps/apps.Controller";
++import { getTaxonomy } from "#/controllers/apps/taxonomy.Controller";
++import * as SubmitController from "#/controllers/apps/submit.Controller";
++import * as ContributeController from "#/controllers/apps/contribute.Controller";
+ 
+ const router = Router();
+ 
+
+✔ scanned 1 files
+```
+
 ## Features
 
 - **Blazing Fast**: Written in Go using concurrent worker pools.
