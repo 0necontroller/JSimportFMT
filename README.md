@@ -107,6 +107,8 @@ jsimportfmt . --allow dist --allow build
 
 The `.jifallow` file supports `#` comments and one directory per line. Any directory listed there (or passed via `--allow`) will bypass both default ignores and `.gitignore` rules.
 
+See [.jifallow.example](.jifallow.example) for a concrete example.
+
 ### Check Mode (CI)
 Verify formatting without making changes:
 ```bash

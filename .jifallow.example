@@ -1,0 +1,14 @@
+# Directories listed here will be overridden (allowed) bypassing default ignores and .gitignore
+# You can add one directory per line.
+
+# Allow build outputs
+dist
+build
+out
+
+# Allow specific tool caches if needed
+.cache
+.turbo
+
+# Allow node_modules (not recommended, but possible)
+# node_modules
