@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/0necontroller/jsimportfmt/internal/scanner"
@@ -18,6 +19,7 @@ var (
 	separateTypes bool
 	checkIgnore   bool
 	allowDirs     []string
+	allowFile     string
 )
 
 var rootCmd = &cobra.Command{
@@ -32,6 +34,26 @@ locates import statements, and reorders them according to configurable rules.`,
 			target = args[0]
 		}
 		
+		allowFilePath := allowFile
+		if allowFilePath == "" {
+			info, err := os.Stat(target)
+			dir := target
+			if err == nil && !info.IsDir() {
+				dir = filepath.Dir(target)
+			}
+			allowFilePath = filepath.Join(dir, ".jifallow")
+		}
+
+		content, err := os.ReadFile(allowFilePath)
+		if err == nil {
+			for _, line := range strings.Split(string(content), "\n") {
+				line = strings.TrimSpace(line)
+				if line != "" && !strings.HasPrefix(line, "#") {
+					allowDirs = append(allowDirs, line)
+				}
+			}
+		}
+		
 		if checkIgnore {
 			matcher, err := scanner.GetMatcher(target, allowDirs)
 			if err != nil {
@@ -39,20 +61,25 @@ locates import statements, and reorders them according to configurable rules.`,
 				os.Exit(2)
 			}
 			
-			fmt.Println("Default Ignored Directories:")
-			for _, dir := range matcher.GetDefaultIgnored() {
-				fmt.Printf("  - %s\n", dir)
-			}
-			
-			lines := matcher.GetGitignoreLines()
-			if len(lines) > 0 {
-				fmt.Println("\nRules from .gitignore:")
-				for _, line := range lines {
-					fmt.Printf("  - %s\n", line)
+			printColumns := func(title string, items []string) {
+				fmt.Printf("\n%s\n", title)
+				if len(items) == 0 {
+					fmt.Println("  (none)")
+					return
 				}
-			} else {
-				fmt.Println("\nNo rules found in .gitignore (or file not found).")
+				
+				cols := 4
+				for i := 0; i < len(items); i += cols {
+					for j := 0; j < cols && i+j < len(items); j++ {
+						// 22 characters wide per column is generally good enough
+						fmt.Printf("  %-22s", items[i+j])
+					}
+					fmt.Println()
+				}
 			}
+
+			printColumns("Default Ignored Directories:", matcher.GetDefaultIgnored())
+			printColumns("Rules from .gitignore:", matcher.GetGitignoreLines())
 			return nil
 		}
 
@@ -183,6 +210,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&writeMode, "write", "w", false, "Rewrite files in place")
 	rootCmd.Flags().BoolVarP(&checkMode, "check", "c", false, "Check if files need formatting without changing them")
 	rootCmd.Flags().BoolVar(&checkIgnore, "check-ignore", false, "List default and .gitignore rules that apply to the target")
+	rootCmd.Flags().StringVar(&allowFile, "allow-file", "", "Path to a .jifallow file containing a list of directories to always allow")
 	rootCmd.Flags().BoolVar(&dryRunMode, "dry-run", false, "Display unified diffs without modifying files")
 	rootCmd.Flags().BoolVar(&separateTypes, "separate-types", false, "Sort and separate type imports from regular imports")
 	rootCmd.Flags().StringSliceVar(&allowDirs, "allow", []string{}, "Explicitly allow ignored directories (e.g. dist, build)")

@@ -9,13 +9,26 @@ import (
 )
 
 var defaultIgnoredDirs = []string{
-	"node_modules",
-	"dist",
-	"build",
-	".next",
-	".nuxt",
-	"coverage",
-	"out",
+	// Next.js & React Ecosystem
+	".next", ".cache", "dist", "build", ".expo",
+	// Vue, Nuxt, & Svelte Ecosystem
+	".nuxt", ".output", ".svelte-kit",
+	// Angular & Other Meta-Frameworks
+	".angular", ".astro", ".remix", "out",
+	// Modern JS Bundlers & Runtimes
+	".rsbuild", ".parcel-cache", ".turbo", ".vercel", ".netlify",
+	// JavaScript/TypeScript
+	"node_modules", "bower_components", "jspm_packages", "typings",
+	// Python
+	".venv", "venv", "env", "conda-meta", "__pycache__",
+	// Java/Kotlin/Scala
+	".gradle", "target", ".idea",
+	// C#/.NET
+	"bin", "obj", "packages", ".vs",
+	// Go, Ruby
+	"vendor", ".bundle",
+	// General Version Control & OS
+	".git", ".svn", ".hg", "CVS", ".Trash", "Thumbs.db",
 }
 
 type Matcher struct {
@@ -34,10 +47,6 @@ func NewMatcher(gitignorePath string, allowDirs []string) (*Matcher, error) {
 		ig, err = ignore.CompileIgnoreFile(gitignorePath)
 		if err == nil {
 			// Read the lines to store them
-			importOS := true // Just to remind we need to import "os"
-			if importOS {
-				importOS = false
-			}
 			content, err := os.ReadFile(gitignorePath)
 			if err == nil {
 				for _, line := range strings.Split(string(content), "\n") {
@@ -77,23 +86,19 @@ func (m *Matcher) GetGitignoreLines() []string {
 
 // IsIgnored checks if a given file or directory path is ignored.
 func (m *Matcher) IsIgnored(path string, isDir bool) bool {
+	parts := strings.Split(filepath.ToSlash(path), "/")
+
 	// First check explicit allow overrides for directories.
-	if isDir {
-		base := filepath.Base(path)
-		if m.allowedDirs[base] {
+	for _, part := range parts {
+		if m.allowedDirs[part] {
 			return false
 		}
-	} else {
-		// For files, if their parent dir is allowed, we don't automatically allow the file,
-		// but we already traversed into the directory.
 	}
 
-	// Check default ignored directories (if they are a directory, or part of the path).
-	// We can just check if any part of the path matches the default ignored dirs.
-	parts := strings.Split(filepath.ToSlash(path), "/")
+	// Check default ignored directories
 	for _, part := range parts {
 		for _, ignoredDir := range defaultIgnoredDirs {
-			if part == ignoredDir && !m.allowedDirs[ignoredDir] {
+			if part == ignoredDir {
 				return true
 			}
 		}
