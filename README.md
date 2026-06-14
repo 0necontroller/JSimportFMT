@@ -6,7 +6,8 @@ A high-performance CLI tool written in Go to automatically format and sort JavaS
 
 - **Blazing Fast**: Written in Go using concurrent worker pools.
 - **Smart Parsing**: Uses a lightweight state-machine parser instead of a slow AST, ensuring comments, spacing, and formatting within imports are perfectly preserved.
-- **Git & Gitignore Aware**: Automatically respects `.gitignore` rules and ensures execution within a Git repository.
+- **Git & Gitignore Aware**: Automatically respects `.gitignore` rules if a `.git` folder is found within 2 levels of the target.
+- **Non-Git Support**: Works seamlessly in any directory, even without a Git repository.
 - **Type Separation**: Built-in support to separate type imports (`--separate-types`).
 - **Interactive Mode**: Launch a guided session by simply running `jsimportfmt`.
 - **Multiple Modes**: Supports Write (`--write`), Check (`--check`), and Dry-Run (`--dry-run`) modes.
@@ -27,39 +28,83 @@ go build -o jsimportfmt .
 
 ## Usage Examples
 
-Run interactively:
+### Interactive Mode
+Launch a guided session by running the command without arguments:
 ```bash
 jsimportfmt
 ```
 
-Format a specific directory:
+### Format a Directory
+Scan and rewrite all supported files in a folder:
 ```bash
-jsimportfmt src --write
+jsimportfmt ./src --write
 ```
 
-Format a specific file:
+### Format a Single File
+Target a specific file directly:
 ```bash
-jsimportfmt src/index.ts --write
+jsimportfmt ./src/App.tsx --write
 ```
 
-Format and separate type imports:
-```bash
-jsimportfmt src --write --separate-types
-```
-
-Check if files need formatting (useful for CI):
-```bash
-jsimportfmt src --check
-```
-
-See what would change without modifying files:
+### Dry-Run (Preview Changes)
+See a unified diff of what would change without modifying any files:
 ```bash
 jsimportfmt src --dry-run
 ```
 
-Allow formatting in typically ignored directories:
+**Example Output:**
+```diff
+--- src/index.ts (original)
++++ src/index.ts (formatted)
+@@ -1,6 +1,6 @@
++import fs from "fs";
++import path from "path";
+ import { App } from "./App";
+ import { Config } from "./config";
+-import path from "path";
+-import fs from "fs";
+```
+
+### Separate Type Imports
+Sort regular imports and type imports into separate blocks:
 ```bash
-jsimportfmt . --allow build --allow dist
+jsimportfmt src --write --separate-types
+```
+
+**Example:**
+*Before:*
+```ts
+import type { User } from "./types";
+import React from "react";
+import type { Config } from "./config";
+import { Button } from "./components";
+```
+
+*After:*
+```ts
+import React from "react";
+import { Button } from "./components";
+
+import type { User } from "./types";
+import type { Config } from "./config";
+```
+
+### Check Ignore Rules
+List the default ignores and those parsed from `.gitignore`:
+```bash
+jsimportfmt . --check-ignore
+```
+
+### Whitelist Directories
+Allow formatting in ignored directories using a `.jifallow` file or the `--allow` flag:
+```bash
+jsimportfmt . --allow dist --allow build
+```
+
+### Check Mode (CI)
+Verify formatting without making changes:
+```bash
+jsimportfmt src --check
 ```
 
 ## CI Usage
@@ -75,7 +120,7 @@ steps:
 ### Exit Codes
 - `0`: Success (no formatting needed, or all files successfully formatted in write mode)
 - `1`: Formatting needed (returned in `--check` mode)
-- `2`: Fatal error (e.g., target is not inside a Git repository, or file parsing failed)
+- `2`: Fatal error (e.g., file parsing failed or system error)
 
 ## Performance Notes
 `jsimportfmt` streams file discovery and feeds a worker pool matched to your system's CPU count (`runtime.NumCPU()`). It reads, parses, and formats files incrementally, ensuring low memory overhead even for monorepos with tens of thousands of files.
